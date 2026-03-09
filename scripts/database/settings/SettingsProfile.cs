@@ -257,6 +257,12 @@ public partial class SettingsProfile
 
     #region Other
 
+    [Order]
+    /// <summary>
+    /// Toggles the framerate counter in the corner
+    /// </summary>
+    public SettingsItem<bool> DisplayFPS {get; private set; }
+
     // [Order]
     /// <summary>
     /// Import settings from previous (nightly) version
@@ -313,7 +319,7 @@ public partial class SettingsProfile
             Title = "Approach Rate",
             Description = "Approach rate of hit objects",
             Section = SettingsSection.Gameplay,
-            UpdateAction = _ => updateApproachTime(),
+            UpdateAction = (_, _) => updateApproachTime(),
             Slider = new()
             {
                 Step = 0.5f,
@@ -328,7 +334,7 @@ public partial class SettingsProfile
             Title = "Approach Distance",
             Description = "Approach distance of hit objects",
             Section = SettingsSection.Gameplay,
-            UpdateAction = _ => updateApproachTime(),
+            UpdateAction = (_, _) => updateApproachTime(),
             Slider = new()
             {
                 Step = 0.5f,
@@ -437,7 +443,7 @@ public partial class SettingsProfile
             Title = "Skin",
             Description = "Selected skin for the game",
             Section = SettingsSection.Visual,
-            UpdateAction = _ => SkinManager.Load(),
+            UpdateAction = (_, init) => { if (!init) { SkinManager.Load(); } },
             Buttons =
             [
                 new() { Title = "Skin Folder", Description = "Open the skin folder", OnPressed = () => { OS.ShellOpen($"{Constants.USER_FOLDER}/skins/{SettingsManager.Instance.Settings.Skin}"); } }
@@ -454,7 +460,7 @@ public partial class SettingsProfile
             Title = "Menu Space",
             Description = "Overrides the skin's background space for the menu",
             Section = SettingsSection.Visual,
-            UpdateAction = _ => SkinManager.Load(),
+            UpdateAction = (_, init) => { if (!init) { SkinManager.Load(); } },
             List = new("skin")
             {
                 Values = [ "skin", "void", "grid", "squircles", "waves" ]
@@ -467,7 +473,7 @@ public partial class SettingsProfile
             Title = "Game Space",
             Description = "Overrides the skin's background space for gameplay",
             Section = SettingsSection.Visual,
-            UpdateAction = _ => SkinManager.Load(),
+            UpdateAction = (_, init) => { if (!init) { SkinManager.Load(); } },
             List = new("skin")
             {
                 Values = [ "skin", "void", "grid", "squircles", "waves" ]
@@ -488,7 +494,7 @@ public partial class SettingsProfile
             Title = "Colors",
             Description = "Overrides the skin's colorset",
             Section = SettingsSection.Visual,
-            UpdateAction = _ => SkinManager.Load(),
+            UpdateAction = (_, init) => { if (!init) { SkinManager.Load(); } },
             List = new("skin")
             {
                 Values = [ "skin", "default" ]
@@ -515,7 +521,7 @@ public partial class SettingsProfile
             Title = "Note Mesh",
             Description = "Overrides the skin's note mesh",
             Section = SettingsSection.Visual,
-            UpdateAction = _ => SkinManager.Load(),
+            UpdateAction = (_, init) => { if (!init) { SkinManager.Load(); } },
             List = new("skin")
             {
                 Values = [ "skin", "squircle", "square" ]
@@ -670,7 +676,7 @@ public partial class SettingsProfile
             Title = "Fullscreen",
             Description = "Toggles the window to fullscreen",
             Section = SettingsSection.Video,
-            UpdateAction = value => DisplayServer.WindowSetMode(
+            UpdateAction = (value, _) => DisplayServer.WindowSetMode(
                 value
                 ? DisplayServer.WindowMode.ExclusiveFullscreen
                 : DisplayServer.WindowMode.Windowed)
@@ -682,7 +688,7 @@ public partial class SettingsProfile
             Title = "Unlock FPS",
             Description = "Unlocks maximum frames per second",
             Section = SettingsSection.Video,
-            UpdateAction = value => Engine.MaxFps = UnlockFPS ? 0 : FPS
+            UpdateAction = (value, _) => Engine.MaxFps = UnlockFPS ? 0 : FPS
         };
 
         FPS = new(240)
@@ -697,7 +703,7 @@ public partial class SettingsProfile
                 MinValue = 60,
                 MaxValue = 540,
             },
-            UpdateAction = value => Engine.MaxFps = UnlockFPS ? 0 : FPS
+            UpdateAction = (value, _) => Engine.MaxFps = UnlockFPS ? 0 : FPS
         };
 
         #endregion
@@ -726,7 +732,7 @@ public partial class SettingsProfile
             Title = "Master Volume",
             Description = "Master volume control for all audio",
             Section = SettingsSection.Audio,
-            UpdateAction = _ => SoundManager.UpdateVolume(),
+            UpdateAction = (_, init) => { if (!init) { SoundManager.UpdateVolume(); } },
             Slider = new()
             {
                 Step = 1,
@@ -741,7 +747,7 @@ public partial class SettingsProfile
             Title = "Music Volume",
             Description = "Audio control for the music",
             Section = SettingsSection.Audio,
-            UpdateAction = _ => SoundManager.UpdateVolume(),
+            UpdateAction = (_, init) => { if (!init) { SoundManager.UpdateVolume(); } },
             Slider = new()
             {
                 Step = 1,
@@ -756,7 +762,7 @@ public partial class SettingsProfile
             Title = "SFX Volume",
             Description = "Audio control for sound effects",
             Section = SettingsSection.Audio,
-            UpdateAction = _ => SoundManager.UpdateVolume(),
+            UpdateAction = (_, init) => { if (!init) { SoundManager.UpdateVolume(); } },
             Slider = new()
             {
                 Step = 1,
@@ -782,6 +788,14 @@ public partial class SettingsProfile
         //     SaveToDisk = false,
         // };
 
+        DisplayFPS = new(true)
+        {
+            Id = "DisplayFPS",
+            Title = "Display FPS",
+            Description = "Toggles the framerate counter in the corner",
+            Section = SettingsSection.Other
+        };
+
         RecordReplays = new(true)
         {
             Id = "RecordReplays",
@@ -794,13 +808,18 @@ public partial class SettingsProfile
         {
             Id = "ResetToDefaults",
             Title = "Reset to Defaults",
-            Description = "Resets all settings to default values.",
+            Description = "Resets all settings to default values",
             Section = SettingsSection.Other,
-            Buttons = 
+            Buttons =
             [
-                new() {Title = "Reset", Description = "WARNING: THIS RESETS YOUR CURRENT PROFILE!", OnPressed = () => {
-                    SettingsManager.ResetToDefaults();
-                }}
+                new()
+                {
+                    Title = "Reset",
+                    Description = "WARNING: THIS RESETS YOUR CURRENT PROFILE",
+                    OnPressed = () => {
+                        SettingsManager.ResetToDefaults();
+                    }
+                }
             ],
         };
 
