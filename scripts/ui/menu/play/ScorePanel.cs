@@ -51,8 +51,8 @@ public partial class ScorePanel : Panel
         Score = score;
 
         playerLabel.Text = score.Player;
-        accuracyLabel.Text = $"{score.Accuracy.ToString().PadDecimals(2)}%";
-        speedLabel.Text = $"{score.Speed.ToString().PadDecimals(2)}x";
+        accuracyLabel.Text = $"{score.Accuracy:F2}%";
+        speedLabel.Text = $"{score.Speed:F2}x";
         timeLabel.Text = Util.String.FormatUnixTimePretty(Time.GetUnixTimeFromSystem(), score.Time);
 
         if (score.Qualifies)
