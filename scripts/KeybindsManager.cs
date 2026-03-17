@@ -24,7 +24,10 @@ public partial class KeybindsManager : Node
             {
                 case Key.F1:
                 {
-                    wikiPopup.Show();
+                    if (!LegacyRunner.Playing)
+                    {
+                        wikiPopup.Show(!wikiPopup.Shown);
+                    }
                     break;
                 }
                 default:
