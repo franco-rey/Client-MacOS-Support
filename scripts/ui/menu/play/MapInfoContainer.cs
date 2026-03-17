@@ -1,6 +1,6 @@
-using Godot;
 using System;
 using System.IO;
+using Godot;
 
 public partial class MapInfoContainer : Panel, ISkinnable
 {
@@ -309,8 +309,8 @@ public partial class MapInfoContainer : Panel, ISkinnable
         }
     }
 
-	public void Setup(Map map)
-	{
+    public void Setup(Map map)
+    {
         if (map == null) return;
 
         if (Name == map.Name)
