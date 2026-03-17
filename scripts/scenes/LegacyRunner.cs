@@ -285,7 +285,7 @@ public partial class LegacyRunner : BaseScene
 			hitsLabel.Text = $"{Hits}";
 			hitsLabel.LabelSettings.FontColor = Color.Color8(255, 255, 255, 255);
 			sumLabel.Text = Util.String.PadMagnitude(Sum.ToString());
-			accuracyLabel.Text = $"{(Hits + Misses == 0 ? "100.00" : Accuracy.ToString().PadDecimals(2))}%";
+			accuracyLabel.Text = $"{(Hits + Misses == 0 ? "100.00" : Accuracy.ToString("F2"))}%";
 			comboLabel.Text = Combo.ToString();
 
 			if (!settings.AlwaysPlayHitSound.Value)
@@ -372,7 +372,7 @@ public partial class LegacyRunner : BaseScene
 			simpleMissesLabel.Text = $"{Misses}";
 			missesLabel.LabelSettings.FontColor = Color.Color8(255, 255, 255, 255);
 			sumLabel.Text = Util.String.PadMagnitude(Sum.ToString());
-			accuracyLabel.Text = $"{(Hits + Misses == 0 ? "100.00" : Accuracy.ToString().PadDecimals(2))}%";
+			accuracyLabel.Text = $"{(Hits + Misses == 0 ? "100.00" : Accuracy.ToString("F2"))}%";
 			comboLabel.Text = Combo.ToString();
 
 			missTween?.Kill();
@@ -655,7 +655,7 @@ public partial class LegacyRunner : BaseScene
 		titleLabel.Text = CurrentAttempt.Map.PrettyTitle;
 		hitsLabel.LabelSettings.FontColor = Color.Color8(255, 255, 255, 160);
 		missesLabel.LabelSettings.FontColor = Color.Color8(255, 255, 255, 160);
-		speedLabel.Text = $"{CurrentAttempt.Speed.ToString().PadDecimals(2)}x";
+		speedLabel.Text = $"{CurrentAttempt.Speed:F2}x";
 		speedLabel.Modulate = Color.Color8(255, 255, 255, (byte)(CurrentAttempt.Speed == 1 ? 0 : 100));
 
 		float videoHeight = 2 * (float)Math.Sqrt(Math.Pow(103.75 / Math.Cos(Mathf.DegToRad(fov / 2)), 2) - Math.Pow(103.75, 2));
@@ -1249,9 +1249,7 @@ public partial class LegacyRunner : BaseScene
 	{
         map = MapParser.Decode(map.FilePath);
 
-        Control focused = SceneManager.Root.GetViewport().GuiGetFocusOwner();
-
-        focused?.ReleaseFocus();
+        SceneManager.Root.GetViewport().GuiGetFocusOwner()?.ReleaseFocus();
 
 		if (Playing)
 		{
