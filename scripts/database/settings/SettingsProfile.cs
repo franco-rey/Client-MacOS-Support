@@ -226,10 +226,10 @@ public partial class SettingsProfile
     public SettingsItem<bool> Fullscreen { get; private set; }
 
     /// <summary>
-    /// Unlocks maximum frames per second
+    /// Locks maximum frames per second
     /// </summary>
     [Order]
-    public SettingsItem<bool> UnlockFPS { get; private set; }
+    public SettingsItem<bool> LockFPS { get; private set; }
 
     /// <summary>
     /// Adjusts maximum frames per second
@@ -306,6 +306,12 @@ public partial class SettingsProfile
     /// </summary>
     [Order]
     public SettingsItem<bool> AutoplayJukebox { get; private set; }
+
+    /// <summary>
+    /// Adjusts the local audio offset in milliseconds
+    /// </summary>
+    [Order]
+    public SettingsItem<float> LocalOffset { get; private set; }
 
     #endregion
 
@@ -772,13 +778,13 @@ public partial class SettingsProfile
                 : DisplayServer.WindowMode.Windowed)
         };
 
-        UnlockFPS = new(true)
+        LockFPS = new(true)
         {
-            Id = "UnlockFPS",
-            Title = "Unlock FPS",
-            Description = "Unlocks maximum frames per second",
+            Id = "LockFPS",
+            Title = "Lock FPS",
+            Description = "Locks maximum frames per second",
             Section = SettingsSection.Video,
-            UpdateAction = (value, _) => Engine.MaxFps = UnlockFPS ? 0 : FPS
+            UpdateAction = (value, _) => Engine.MaxFps = value ? FPS.Value : 0
         };
 
         FPS = new(240)
@@ -793,7 +799,7 @@ public partial class SettingsProfile
                 MinValue = 60,
                 MaxValue = 540,
             },
-            UpdateAction = (value, _) => Engine.MaxFps = UnlockFPS ? 0 : FPS
+            UpdateAction = (value, _) => Engine.MaxFps = LockFPS.Value ? value : 0
         };
 
         #endregion
@@ -806,6 +812,20 @@ public partial class SettingsProfile
             Title = "Autoplay Jukebox",
             Description = "Automatically plays the jukebox on start",
             Section = SettingsSection.Audio,
+        };
+
+        LocalOffset = new(0)
+        {
+            Id = "LocalOffset",
+            Title = "Local Offset",
+            Description = "Adjusts audio offset in milliseconds",
+            Section = SettingsSection.Audio,
+            Slider = new()
+            {
+                Step = 1,
+                MinValue = -500,
+                MaxValue = 500
+            }
         };
 
         AlwaysPlayHitSound = new(false)
