@@ -29,6 +29,8 @@ public partial class LegacyRunner : BaseScene
     private static MultiMeshInstance3D notesMultimesh;
     private static MultiMeshInstance3D cursorTrailMultimesh;
     private static TextureRect healthTexture;
+    private static Node healthPanel;
+    private static Node progressBarNode;
     private static TextureRect progressBarTexture;
     private static SubViewport panelLeft;
     private static SubViewport panelRight;
@@ -290,7 +292,7 @@ public partial class LegacyRunner : BaseScene
 
             if (!settings.AlwaysPlayHitSound.Value)
             {
-                SoundManager.HitSound.Play();
+                SoundManager.PlayHitSound();
             }
 
             hitTween?.Kill();
@@ -367,6 +369,8 @@ public partial class LegacyRunner : BaseScene
                     QueueStop();
                 }
             }
+
+            SoundManager.PlayMissSound();
 
             multiplierLabel.Text = $"{ComboMultiplier}x";
             missesLabel.Text = $"{Misses}";
@@ -489,8 +493,10 @@ public partial class LegacyRunner : BaseScene
         cursorTrailMultimesh = holder.GetNode<MultiMeshInstance3D>("CursorTrail");
         //jesus = GetNode<TextureRect>("Jesus");
 
-        healthTexture = holder.GetNode("Health").GetNode("HealthViewport").GetNode<TextureRect>("Main");
-        progressBarTexture = holder.GetNode("ProgressBar").GetNode("ProgressBarViewport").GetNode<TextureRect>("Main");
+        healthPanel = holder.GetNode("Health");
+        healthTexture = healthPanel.GetNode("HealthViewport").GetNode<TextureRect>("Main");
+        progressBarNode = holder.GetNode("ProgressBar");
+        progressBarTexture = progressBarNode.GetNode("ProgressBarViewport").GetNode<TextureRect>("Main");
         panelLeft = holder.GetNode("PanelLeft").GetNode<SubViewport>("PanelLeftViewport");
         panelRight = holder.GetNode("PanelRight").GetNode<SubViewport>("PanelRightViewport");
         //bell = GetNode<AudioStreamPlayer>("Bell");
@@ -656,6 +662,32 @@ public partial class LegacyRunner : BaseScene
             simpleMissesLabel.Visible = true;
         }
 
+        bool superSimpleHUD = settings.SuperSimpleHUD.Value;
+        if (superSimpleHUD)
+        {
+            // Apply everything SimpleHUD hides
+            Godot.Collections.Array<Node> widgets = panelLeft.GetChildren();
+            widgets.AddRange(panelRight.GetChildren());
+            foreach (Node widget in widgets)
+                (widget as CanvasItem).Visible = false;
+            simpleMissesLabel.Visible = true;
+
+            // Additionally hide title, progress text, combo, health, and progress bar
+            titleLabel.Visible = false;
+            progressLabel.Visible = false;
+            comboLabel.Visible = false;
+
+            if (healthPanel is CanvasItem healthCanvas)
+                healthCanvas.Visible = false;
+            else if (healthPanel is Node3D healthNode3D)
+                healthNode3D.Visible = false;
+
+            if (progressBarNode is CanvasItem progressBarCanvas)
+                progressBarCanvas.Visible = false;
+            else if (progressBarNode is Node3D progressBarNode3D)
+                progressBarNode3D.Visible = false;
+        }
+
         float fov = (float)(CurrentAttempt.IsReplay ? CurrentAttempt.Replays[0].FoV : settings.FoV.Value);
 
         MenuShown = false;
@@ -691,7 +723,7 @@ public partial class LegacyRunner : BaseScene
         try
         {
                 StandardMaterial3D cursorMaterial = cursor.MaterialOverride as StandardMaterial3D ?? cursor.GetActiveMaterial(0) as StandardMaterial3D;
-                float cursorOpacity = Math.Clamp(settings.CursorOpacity.Value / 100f, 0, 1);
+                float cursorOpacity = Math.Min(Math.Clamp(settings.CursorOpacity.Value / 100f, 0, 1), 0.998f);
                 float cursorTransparency = 1f - cursorOpacity;
 
                 cursor.Transparency = cursorTransparency;
@@ -1040,7 +1072,7 @@ public partial class LegacyRunner : BaseScene
             {
                 CurrentAttempt.Map.Notes[i].Hittable = true;
 
-                SoundManager.HitSound.Play();
+                SoundManager.PlayHitSound();
             }
 
             ToProcess++;
@@ -1273,12 +1305,15 @@ public partial class LegacyRunner : BaseScene
 
         SceneManager.Root.GetViewport().GuiGetFocusOwner()?.ReleaseFocus();
 
+        SoundManager.MenuMusic?.Stop();
+
         if (Playing)
         {
             Stop();
         }
 
         CurrentAttempt = new(map, speed, startFrom, mods ?? [], players, replays);
+        SoundManager.BeginGameplayScope(CurrentAttempt.Map);
         Playing = true;
         stopQueued = false;
         Started = Time.GetTicksUsec();
