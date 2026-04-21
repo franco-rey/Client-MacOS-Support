@@ -584,7 +584,7 @@ public partial class LegacyRunner : BaseScene
         menuButtonsHolder.GetNode<Button>("Restart").Pressed += Restart;
         menuButtonsHolder.GetNode<Button>("Settings").Pressed += () =>
         {
-            SettingsManager.ShowMenu();
+            SettingsMenu.Instance.ShowMenu();
         };
         menuButtonsHolder.GetNode<Button>("Quit").Pressed += () =>
         {
@@ -752,17 +752,12 @@ public partial class LegacyRunner : BaseScene
 
         try
         {
-                StandardMaterial3D cursorMaterial = cursor.MaterialOverride as StandardMaterial3D ?? cursor.GetActiveMaterial(0) as StandardMaterial3D;
-                float cursorOpacity = Math.Min(Math.Clamp(settings.CursorOpacity.Value / 100f, 0, 1), 0.998f);
-                float cursorTransparency = 1f - cursorOpacity;
+            StandardMaterial3D cursorMaterial = cursor.MaterialOverride as StandardMaterial3D ?? cursor.GetActiveMaterial(0) as StandardMaterial3D;
+            float cursorOpacity = Math.Clamp((float)settings.CursorOpacity.Value / 100, 0, 1);
+            float cursorTransparency = 1f - cursorOpacity;
 
-                cursor.Transparency = cursorTransparency;
-
-                if (cursorMaterial != null)
-                {
-                    cursorMaterial.AlbedoTexture = SkinManager.Instance.Skin.CursorImage;
-                    cursorMaterial.Transparency = cursorOpacity < 1 ? BaseMaterial3D.TransparencyEnum.Alpha : BaseMaterial3D.TransparencyEnum.Disabled;
-                }
+            cursor.Transparency = cursorTransparency;
+            cursorMaterial?.AlbedoTexture = SkinManager.Instance.Skin.CursorImage;
 
             cursor.Transparency = cursorTransparency;
             (cursorTrailMultimesh.MaterialOverride as StandardMaterial3D).AlbedoTexture = SkinManager.Instance.Skin.CursorImage;
@@ -944,6 +939,17 @@ public partial class LegacyRunner : BaseScene
         if (!Playing || MenuShown)
         {
             return;
+        }
+        
+        double audioDelay = CurrentAttempt.Progress - 1000 * (SoundManager.Song.GetPlaybackPosition() + AudioServer.GetTimeSinceLastMix());
+        
+        if (Math.Abs(audioDelay) > 25 && CurrentAttempt.Progress > 0)
+        {
+            SoundManager.Song.PitchScale = Math.Max(Mathf.Epsilon, (float)CurrentAttempt.Speed + (float)audioDelay / 1000);
+        }
+        else if (SoundManager.Song.PitchScale - CurrentAttempt.Speed > Mathf.Epsilon)
+        {
+            SoundManager.Song.PitchScale = (float)CurrentAttempt.Speed;
         }
 
         if (CurrentAttempt.IsReplay)
@@ -1149,9 +1155,16 @@ public partial class LegacyRunner : BaseScene
 
         progressLabel.Text = $"{Util.String.FormatTime(Math.Max(0, CurrentAttempt.Progress) / 1000)} / {Util.String.FormatTime(MapLength / 1000)}";
         healthTexture.Size = healthTexture.Size.Lerp(new Vector2(32 + (float)CurrentAttempt.Health * 10.24f, 80), Math.Min(1, (float)delta * 64));
-        progressBarTexture.Size = new Vector2(32 + (float)(CurrentAttempt.Progress / MapLength) * 1024, 80);
+
+        Vector2 progressSize = new Vector2(32 + (float)(CurrentAttempt.Progress / MapLength) * 1024, 80);
+
+        if ((int)progressSize.X != (int)progressBarTexture.Size.X)
+        {
+            progressBarTexture.Size = progressSize;
+        }
+
         skipLabel.Modulate = Color.Color8(255, 255, 255, (byte)(skipLabelAlpha * 255));
-        cursor.RotationDegrees += Vector3.Back * settings.CursorRotation * (float)delta;
+        cursor.RotationDegrees += Vector3.Back * (float)settings.CursorRotation * (float)delta;
 
         // trail stuff
         if (settings.CursorTrail)
@@ -1282,9 +1295,14 @@ public partial class LegacyRunner : BaseScene
                 {
                     case Key.Escape:
                         CurrentAttempt.Qualifies = false;
-                            if (SettingsManager.Shown)
+
+                        if (pauseShown)
                         {
-                            SettingsManager.HideMenu();
+                            HidePause();
+                        }
+                        else if (SettingsMenu.Instance.Shown)
+                        {
+                            SettingsMenu.Instance.HideMenu();
                         }
                             else if (isPaused() || isPauseRampActive())
                             {
@@ -1320,7 +1338,7 @@ public partial class LegacyRunner : BaseScene
                         }
                         break;
                     case Key.F:
-                        settings.FadeOut.Value = settings.FadeOut.Value > 0 ? 0 : 5;
+                        settings.FadeOut.Value = settings.FadeOut.Value > 0 ? 0 : 100;
                         break;
                     case Key.P:
                         settings.Pushback.Value = !settings.Pushback;
@@ -1857,7 +1875,7 @@ public partial class LegacyRunner : BaseScene
             // The pivot is to mimic ROBLOX's orbital camera
             Vector3 Pivot = Camera.Basis.Z / 4f;
 
-            Camera.Position = Origin + CursorLock * settings.CameraParallax + Pivot;
+            Camera.Position = Origin + CursorLock * (float)settings.CameraParallax + Pivot;
 
             Vector3 LookVector = Camera.Basis.Z;
             Vector2 CameraVec2 = new Vector2(Camera.Position.X, Camera.Position.Y);
