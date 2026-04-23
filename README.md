@@ -95,7 +95,7 @@ You can view all releases on the [Rewrite releases page](https://github.com/Rhyt
 |---|---|
 | **Windows** | [Download](https://github.com/Rhythia/Client/releases/latest/download/windows.zip) |
 | **Linux** | [Download](https://github.com/Rhythia/Client/releases/latest/download/linux.zip) |
-| **macOS** | TBA |
+| **macOS** || [Download](https://github.com/franco-askew/Client-MacOS-Support/releases/download/0.1.1/MacOS.zip) |
 
 You can view the Rewrite source code [here](https://github.com/Rhythia/Client).
 
