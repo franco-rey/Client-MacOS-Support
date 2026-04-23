@@ -52,6 +52,8 @@ public partial class SettingsManager : Node
 
     public static void Save(string profile = null)
     {
+        FileInitializer.EnsureUserDataLayout();
+
         profile ??= GetCurrentProfile();
 
         string data = SettingsProfileConverter.Serialize(Instance.Settings);
@@ -67,6 +69,8 @@ public partial class SettingsManager : Node
 
     public static void Load(string profile = null)
     {
+        FileInitializer.EnsureUserDataLayout();
+
         profile ??= GetCurrentProfile();
 
         try
@@ -118,6 +122,8 @@ public partial class SettingsManager : Node
 
     public static void SetCurrentProfile(string profile = null)
     {
+        FileInitializer.EnsureUserDataLayout();
+
         profile ??= GetCurrentProfile();
 
         File.WriteAllText($"{Constants.USER_FOLDER}/current_profile.txt", profile);

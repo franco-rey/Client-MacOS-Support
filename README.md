@@ -19,6 +19,16 @@
 
 ---
 
+## New for Mac
+
+> [!NOTE]
+> The macOS release thus far is focused on ensuring core gameplay functionality. Custom map background-video support is currently unstable on macOS and does not block gameplay.
+
+> [!NOTE]
+> Public macOS releases are intended to be **signed and notarized**. If you are testing an unsigned prerelease artifact, macOS may require you to Control-click the app and choose **Open** the first time.
+
+---
+
 ## Table of Contents
 
 - [About](#about)
@@ -29,6 +39,7 @@
   - [Windows](#windows)
   - [Linux](#linux)
   - [Linux Troubleshooting](#linux-troubleshooting)
+  - [macOS](#macos)
 - [User Folder](#user-folder)
 - [Development](#development)
   - [Prerequisites](#prerequisites)
@@ -63,6 +74,7 @@ You can view all releases on the [Rewrite releases page](https://github.com/Rhyt
 |---|---|
 | **Windows** | [Download](https://github.com/Rhythia/Client/releases/latest/download/windows.zip) |
 | **Linux** | [Download](https://github.com/Rhythia/Client/releases/latest/download/linux.zip) |
+| **macOS** | TBA |
 
 You can view the Rewrite source code [here](https://github.com/Rhythia/Client).
 
@@ -137,6 +149,12 @@ sudo chmod +x Rhythia.x86_64
 
 Still having issues? Visit the **#support** channel in our [Discord](https://discord.gg/rhythia).
 
+### macOS
+
+1. Download `macos.zip` from the Rewrite releases above.
+2. Extract the archive so `Rhythia.app` is available in Finder.
+3. Open `Rhythia.app`.
+
 ---
 
 ## User Folder
@@ -147,6 +165,7 @@ Your maps, replays, skins, and settings are stored separately from the game inst
 |---|---|
 | **Windows** | `%appdata%\Rhythia` |
 | **Linux** | `~/.local/share/Rhythia` |
+| **macOS** | `~/Library/Application Support/Rhythia` |
 
 You can also access the user folder from within the game via **Settings → User Folder**.
 
@@ -158,7 +177,7 @@ You can also access the user folder from within the game via **Settings → User
 
 | Tool | Version | Notes |
 |---|---|---|
-| [Godot Engine](https://godotengine.org/download) | **4.6** | .NET (C#) build required |
+| [Godot Engine](https://godotengine.org/download) | **4.6.1** | .NET (C#) build required |
 | [.NET SDK](https://dotnet.microsoft.com/download) | **10.0** | |
 | [Git LFS](https://git-lfs.github.com/) | Latest | Required for large binary assets |
 
@@ -200,7 +219,7 @@ We ❤️ developers! Contributions are welcome — whether it's bug fixes, feat
 
 | Software | Notes |
 |---|---|
-| [Godot 4.6 Stable (.NET)](https://godotengine.org/download) | The C# / .NET build is required |
+| [Godot 4.6.1 Stable (.NET)](https://godotengine.org/download) | The C# / .NET build is required |
 | [Git](https://git-scm.com/downloads) | Windows: Git for Windows · Linux: `git` package |
 | [GitHub Account](https://github.com/signup) | Needed to fork and open pull requests |
 

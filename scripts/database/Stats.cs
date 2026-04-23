@@ -23,9 +23,19 @@ public partial class Stats : Node
     public static Array<double> PassAccuracies = [];
     public static Godot.Collections.Dictionary<string, ulong> FavoriteMaps = [];
 
+    private static void SetStatsFileAttributes(FileAttributes attributes)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        File.SetAttributes($"{Constants.USER_FOLDER}/stats", attributes);
+    }
+
     public static void Save()
     {
-        File.SetAttributes($"{Constants.USER_FOLDER}/stats", FileAttributes.None);
+        SetStatsFileAttributes(FileAttributes.None);
         Godot.FileAccess file = Godot.FileAccess.Open($"{Constants.USER_FOLDER}/stats", Godot.FileAccess.ModeFlags.Write);
         string accuraciesJson = Json.Stringify(PassAccuracies);
         string mapsJson = Json.Stringify(FavoriteMaps);
@@ -60,7 +70,7 @@ public partial class Stats : Node
         file.StoreBuffer(hash);
         file.Close();
 
-        File.SetAttributes($"{Constants.USER_FOLDER}/stats", FileAttributes.Hidden);
+        SetStatsFileAttributes(FileAttributes.Hidden);
         Logger.Log("Saved stats");
     }
 

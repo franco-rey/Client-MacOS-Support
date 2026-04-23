@@ -19,6 +19,7 @@ public partial class Rhythia : Node
     public override async void _Ready()
     {
         Instance = this;
+        Releases.Initialize();
 
         GetTree().AutoAcceptQuit = false;
 
@@ -75,6 +76,8 @@ public partial class Rhythia : Node
 
         Stats.GamesOpened++;
 
+        Directory.CreateDirectory($"{Constants.USER_FOLDER}/maps");
+        Directory.CreateDirectory($"{Constants.USER_FOLDER}/maps/default");
         
         // marking sspms for importing can be done with an one liner, kept the following block of code in case we need to loop over every valid map file for some reason
 
@@ -187,7 +190,7 @@ public partial class Rhythia : Node
             Stats.Save();
         }
 
-        Discord.Client.Dispose();
+        Discord.DisposeClient();
         
         Instance.GetTree().Quit();
     }

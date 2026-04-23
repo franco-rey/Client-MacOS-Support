@@ -5,6 +5,13 @@ using System.Linq;
 
 public partial class SettingsProfile
 {
+    private static DisplayServer.WindowMode GetPreferredFullscreenMode()
+    {
+        return PlatformCapabilities.IsMacOS
+            ? DisplayServer.WindowMode.Fullscreen
+            : DisplayServer.WindowMode.ExclusiveFullscreen;
+    }
+
     #region Gameplay
 
     /// <summary>
@@ -438,7 +445,7 @@ public partial class SettingsProfile
             UpdateAction = (_, init) => { if (!init) { SkinManager.Load(); } },
             Buttons =
             [
-                new() { Title = "Skin Folder", Description = "Open the skin folder", OnPressed = () => { OS.ShellOpen($"{Constants.USER_FOLDER}/skins/{SettingsManager.Instance.Settings.Skin}"); } }
+                new() { Title = "Skin Folder", Description = "Open the skin folder", OnPressed = () => { OS.ShellShowInFileManager($"{Constants.USER_FOLDER}/skins/{SettingsManager.Instance.Settings.Skin}"); } }
             ],
             List = new("default")
             {
@@ -666,7 +673,7 @@ public partial class SettingsProfile
             Section = SettingsSection.Video,
             UpdateAction = (value, _) => DisplayServer.WindowSetMode(
                 value
-                ? DisplayServer.WindowMode.ExclusiveFullscreen
+                ? GetPreferredFullscreenMode()
                 : DisplayServer.WindowMode.Windowed)
         };
 

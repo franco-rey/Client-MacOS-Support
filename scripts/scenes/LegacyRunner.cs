@@ -158,7 +158,14 @@ public partial class LegacyRunner : BaseScene
 
 			if (!IsReplay && settings.RecordReplays && !Map.Ephemeral)
 			{
-                ReplayFile = Godot.FileAccess.Open($"{Constants.USER_FOLDER}/replays/{ID}.phxr", Godot.FileAccess.ModeFlags.Write);
+				Directory.CreateDirectory($"{Constants.USER_FOLDER}/replays");
+
+				ReplayFile = Godot.FileAccess.Open($"{Constants.USER_FOLDER}/replays/{ID}.phxr", Godot.FileAccess.ModeFlags.Write);
+				if (ReplayFile == null)
+				{
+					throw Logger.Error($"Could not create replay file ({Godot.FileAccess.GetOpenError()})");
+				}
+
 				ReplayFile.StoreString("phxr");	// sig
 				ReplayFile.Store8(1);	// replay file version
 
@@ -632,20 +639,25 @@ public partial class LegacyRunner : BaseScene
 		}
 
 		float fov = (float)(CurrentAttempt.IsReplay ? CurrentAttempt.Replays[0].FoV : settings.FoV.Value);
+        bool supportsMapVideo = PlatformCapabilities.SupportsBackgroundVideo && CurrentAttempt.Map.VideoBuffer != null;
 
 		MenuShown = false;
 		Camera.Fov = fov;
 		videoQuad.Transparency = 1;
+        videoQuad.Visible = supportsMapVideo;
 		titleLabel.Text = CurrentAttempt.Map.PrettyTitle;
 		hitsLabel.LabelSettings.FontColor = Color.Color8(255, 255, 255, 160);
 		missesLabel.LabelSettings.FontColor = Color.Color8(255, 255, 255, 160);
 		speedLabel.Text = $"{CurrentAttempt.Speed.ToString().PadDecimals(2)}x";
 		speedLabel.Modulate = Color.Color8(255, 255, 255, (byte)(CurrentAttempt.Speed == 1 ? 0 : 100));
 
-		float videoHeight = 2 * (float)Math.Sqrt(Math.Pow(103.75 / Math.Cos(Mathf.DegToRad(fov / 2)), 2) - Math.Pow(103.75, 2));
+        if (supportsMapVideo)
+        {
+            float videoHeight = 2 * (float)Math.Sqrt(Math.Pow(103.75 / Math.Cos(Mathf.DegToRad(fov / 2)), 2) - Math.Pow(103.75, 2));
 
-		(videoQuad.Mesh as QuadMesh).Size = new(videoHeight / 0.5625f, videoHeight);	// don't use 16:9? too bad lol
-		video.GetParent<SubViewport>().Size = new((int)(1920 * settings.VideoRenderScale.Value / 100), (int)(1080 * settings.VideoRenderScale.Value / 100));
+            (videoQuad.Mesh as QuadMesh).Size = new(videoHeight / 0.5625f, videoHeight);	// don't use 16:9? too bad lol
+            video.GetParent<SubViewport>().Size = new((int)(1920 * settings.VideoRenderScale.Value / 100), (int)(1080 * settings.VideoRenderScale.Value / 100));
+        }
 
 		multiplierProgress = 0;
 		multiplierColour = Color.Color8(255, 255, 255);
@@ -654,8 +666,8 @@ public partial class LegacyRunner : BaseScene
 		multiplierProgressMaterial.SetShaderParameter("colour", multiplierColour);
 		multiplierProgressMaterial.SetShaderParameter("sides", Math.Clamp(CurrentAttempt.ComboMultiplierIncrement, 3, 32));
 
-		Discord.Client.UpdateDetails("Playing a Map");
-		Discord.Client.UpdateState(CurrentAttempt.Map.PrettyTitle);
+		Discord.UpdateDetails("Playing a Map");
+		Discord.UpdateState(CurrentAttempt.Map.PrettyTitle);
 		// Discord.Client.UpdateEndTime(DateTime.UtcNow.AddSeconds((Time.GetUnixTimeFromSystem() + CurrentAttempt.Map.Length / 1000 / CurrentAttempt.Speed)));
 
 		Input.MouseMode = settings.AbsoluteInput.Value || CurrentAttempt.IsReplay ? Input.MouseModeEnum.ConfinedHidden : Input.MouseModeEnum.Captured;
@@ -890,7 +902,7 @@ public partial class LegacyRunner : BaseScene
 			}
 		}
 
-		if (CurrentAttempt.Map.VideoBuffer != null)
+		if (PlatformCapabilities.SupportsBackgroundVideo && CurrentAttempt.Map.VideoBuffer != null)
 		{
 			if (settings.VideoDim < 100 && !video.IsPlaying() && CurrentAttempt.Progress >= 0)
 			{
@@ -1240,7 +1252,11 @@ public partial class LegacyRunner : BaseScene
 					}
 
 					SoundManager.Song.Seek((float)CurrentAttempt.Progress / 1000);
-					video.StreamPosition = (float)CurrentAttempt.Progress / 1000;
+
+                    if (PlatformCapabilities.SupportsBackgroundVideo && CurrentAttempt.Map.VideoBuffer != null)
+                    {
+                        video.StreamPosition = (float)CurrentAttempt.Progress / 1000;
+                    }
 				}
 			}
 		}
@@ -1386,7 +1402,10 @@ public partial class LegacyRunner : BaseScene
 			Camera.Position = new Vector3(0, 0, 3.75f) + new Vector3(CurrentAttempt.CursorPosition.X, CurrentAttempt.CursorPosition.Y, 0) * (float)(CurrentAttempt.IsReplay ? CurrentAttempt.Replays[0].Parallax : settings.CameraParallax);
 			Camera.Rotation = Vector3.Zero;
 
-			videoQuad.Position = new Vector3(Camera.Position.X, Camera.Position.Y, -100);
+            if (videoQuad.Visible)
+            {
+			    videoQuad.Position = new Vector3(Camera.Position.X, Camera.Position.Y, -100);
+            }
 		}
 		else
 		{
@@ -1410,8 +1429,11 @@ public partial class LegacyRunner : BaseScene
 			CurrentAttempt.CursorPosition = CurrentAttempt.RawCursorPosition.Clamp(-Constants.BOUNDS, Constants.BOUNDS);
 			cursor.Position = new Vector3(CurrentAttempt.CursorPosition.X, CurrentAttempt.CursorPosition.Y, 0);
 
-			videoQuad.Position = Camera.Position - Camera.Basis.Z * 103.75f;
-			videoQuad.Rotation = Camera.Rotation;
+            if (videoQuad.Visible)
+            {
+			    videoQuad.Position = Camera.Position - Camera.Basis.Z * 103.75f;
+			    videoQuad.Rotation = Camera.Rotation;
+            }
 		}
     }
 

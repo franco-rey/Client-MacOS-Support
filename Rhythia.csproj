@@ -10,7 +10,6 @@
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="DiscordRichPresence" Version="1.6.1.70" />
-		<PackageReference Include="Godot.NET.Sdk" Version="4.5.0" />
 		<PackageReference Include="Semver" Version="3.0.0" />
 		<PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
 		<PackageReference Include="Tomlyn" Version="0.20.0" />

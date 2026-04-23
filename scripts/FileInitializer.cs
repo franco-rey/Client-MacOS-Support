@@ -6,6 +6,24 @@ public partial class FileInitializer : Node
 {
     private Node objExporter;
 
+    private static readonly string[] RequiredDirectories =
+    [
+        "cache",
+        "cache/maps",
+        "colorsets",
+        "maps",
+        "maps/default",
+        "meshes",
+        "pbs",
+        "profiles",
+        "profiles/default",
+        "replays",
+        "screenshots",
+        "skins",
+        "skins/default",
+        "spaces"
+    ];
+
     public override void _Ready()
     {
         var script = GD.Load<Script>("res://scripts/OBJExporter.gd");
@@ -14,7 +32,29 @@ public partial class FileInitializer : Node
         AddChild(objExporter);
         objExporter.SetScript(script);
 
+        EnsureUserDataLayout();
         deepCopy();
+        EnsureUserDataLayout();
+    }
+
+    public static void EnsureUserDataLayout()
+    {
+        foreach (string directory in RequiredDirectories)
+        {
+            Directory.CreateDirectory(Path.Combine(Constants.USER_FOLDER, directory));
+        }
+
+        string colorset = Path.Combine(Constants.USER_FOLDER, "colorsets", "default.txt");
+        if (!File.Exists(colorset))
+        {
+            File.WriteAllText(colorset, "ff0059,ffd8e6");
+        }
+
+        string currentProfile = Path.Combine(Constants.USER_FOLDER, "current_profile.txt");
+        if (!File.Exists(currentProfile))
+        {
+            File.WriteAllText(currentProfile, "default");
+        }
     }
 
     private void deepCopy(string resDir = "")

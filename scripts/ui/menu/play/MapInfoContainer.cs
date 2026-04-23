@@ -72,6 +72,11 @@ public partial class MapInfoContainer : Panel, ISkinnable
         copyDialog = copyButton.GetNode<FileDialog>("CopyDialog");
         deleteButton = mapButtonsContainer.GetNode<Button>("Delete");
 
+        bool supportsBackgroundVideo = PlatformCapabilities.SupportsBackgroundVideo;
+        videoButton.Visible = supportsBackgroundVideo;
+        videoButton.Disabled = !supportsBackgroundVideo;
+        videoDialog.Visible = supportsBackgroundVideo;
+
         favoriteButton.Pressed += () =>
         {
             Map.Favorite = !Map.Favorite;
@@ -171,7 +176,7 @@ public partial class MapInfoContainer : Panel, ISkinnable
 
             Lobby.SetSpeed(value);
 
-            if (SoundManager.Map.Name != Map.Name)
+            if (SoundManager.Map == null || SoundManager.Map.Name != Map.Name)
             {
                 SoundManager.PlayJukebox(Map);
             }
@@ -232,7 +237,7 @@ public partial class MapInfoContainer : Panel, ISkinnable
 
             Lobby.SetStartFrom(value);
 
-            if (SoundManager.Map.Name != Map.Name)
+            if (SoundManager.Map == null || SoundManager.Map.Name != Map.Name)
             {
                 SoundManager.PlayJukebox(Map);
             }

@@ -1,26 +1,69 @@
 ﻿using DiscordRPC;
+using Godot;
 
 public class Discord
 {
-    private static string appId = "1231699688340590722";
+    private static readonly string appId = "1231699688340590722";
     public static DiscordRpcClient Client { get; private set; }
+    public static bool Enabled => PlatformCapabilities.SupportsDiscordRichPresence && Client != null;
 
     static Discord()
     {
-        // TODO: Add logging here
-        Client = new DiscordRpcClient(appId)
+        if (!PlatformCapabilities.SupportsDiscordRichPresence)
         {
+            return;
+        }
 
-        };
-
-        Client.Initialize();
-
-        Client.SetPresence(new RichPresence()
+        try
         {
-            Assets = new Assets()
+            Client = new DiscordRpcClient(appId)
             {
-                LargeImageKey = "short"
-            },
-        });
+            };
+
+            Client.Initialize();
+            Client.SetPresence(new RichPresence()
+            {
+                Assets = new Assets()
+                {
+                    LargeImageKey = "short"
+                },
+            });
+        }
+        catch (System.Exception exception)
+        {
+            Client = null;
+            GD.PrintErr($"Discord RPC unavailable: {exception.Message}");
+        }
+    }
+
+    public static void UpdateDetails(string details)
+    {
+        if (!Enabled)
+        {
+            return;
+        }
+
+        Client.UpdateDetails(details);
+    }
+
+    public static void UpdateState(string state)
+    {
+        if (!Enabled)
+        {
+            return;
+        }
+
+        Client.UpdateState(state);
+    }
+
+    public static void DisposeClient()
+    {
+        if (!Enabled)
+        {
+            return;
+        }
+
+        Client.Dispose();
+        Client = null;
     }
 }

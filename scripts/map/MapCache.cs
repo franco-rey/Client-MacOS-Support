@@ -158,8 +158,8 @@ public static class MapCache
             try
             {
                 var map = MapParser.Decode(file);
-                map.Collection = file.GetBaseDir().Split("/")[^1];
-                map.FilePath = $"{Constants.USER_FOLDER}/maps/{map.Collection}/{map.Name}.{Constants.DEFAULT_MAP_EXT}";
+                map.Collection = Path.GetFileName(Path.GetDirectoryName(file)) ?? "default";
+                map.FilePath = Path.Combine(Constants.USER_FOLDER, "maps", map.Collection, $"{map.Name}.{Constants.DEFAULT_MAP_EXT}");
                 map.Hash = GetMd5Checksum(file);
                 File.Move(file, map.FilePath);
                 InsertMap(map);
@@ -176,7 +176,7 @@ public static class MapCache
 
     public static int InsertMap(Map map)
     {
-        var existing = DatabaseService.Connection.Find<Map>(x => x.Hash == x.Hash);
+        var existing = DatabaseService.Connection.Find<Map>(x => x.Hash == map.Hash);
         var updated = DatabaseService.Connection.Find<Map>(x => x.Name == map.Name);
         try
         {
@@ -200,10 +200,10 @@ public static class MapCache
                 return -1;
             }
 
-            string newPath = Path.Combine(MapUtil.MapsFolder, map.Collection, map.Name);
-            string existingPath = Path.Combine(MapUtil.MapsFolder, map.Collection, existing?.FilePath ?? updated.FilePath);
+            string newPath = Path.Combine(MapUtil.MapsFolder, map.Collection, $"{map.Name}.{Constants.DEFAULT_MAP_EXT}");
+            string existingPath = existing?.FilePath ?? updated.FilePath;
 
-            if (existingPath != newPath)
+            if (!Path.GetFullPath(existingPath).Equals(Path.GetFullPath(newPath), StringComparison.Ordinal))
             {
                 File.Delete(newPath);
                 return -1;

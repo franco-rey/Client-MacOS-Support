@@ -117,7 +117,10 @@ public partial class MapList : Panel, ISkinnable
         MapParser.Instance.MapsImportFinished += maps => {
             MapCache.Load(false);
             UpdateMaps();
-            Select(maps[0]);
+            if (maps.Length > 0)
+            {
+                Select(maps[0]);
+            }
         };
         MapManager.MapsInitialized += _ => UpdateMaps();
         MapManager.MapUpdated += map => {
@@ -361,7 +364,7 @@ public partial class MapList : Panel, ISkinnable
 
         Focus(map);
 
-        SceneManager.Space.UpdateMap(map);
+        SceneManager.Space?.UpdateMap(map);
     }
 
     public void Focus(Map map)

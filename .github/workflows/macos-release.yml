@@ -1,0 +1,187 @@
+name: macOS Release
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    env:
+      GODOT_VERSION: 4.6.1-stable
+      GODOT_TEMPLATE_VERSION: 4.6.1.stable.mono
+      GODOT_EDITOR_ARCHIVE: Godot_v4.6.1-stable_mono_macos.universal.zip
+      GODOT_TEMPLATES_ARCHIVE: Godot_v4.6.1-stable_mono_export_templates.tpz
+      EXPORT_PRESET: macOS
+      EXPORT_PATH: build/macos/unsigned/macos.zip
+      FINAL_ARCHIVE: build/macos/macos.zip
+
+    steps:
+      - name: Check Out Repository
+        uses: actions/checkout@v4
+
+      - name: Set Up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Download Godot .NET Editor and Export Templates
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/godot-downloads"
+          curl -L "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/${GODOT_EDITOR_ARCHIVE}" -o "$RUNNER_TEMP/godot-downloads/${GODOT_EDITOR_ARCHIVE}"
+          curl -L "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/${GODOT_TEMPLATES_ARCHIVE}" -o "$RUNNER_TEMP/godot-downloads/${GODOT_TEMPLATES_ARCHIVE}"
+
+      - name: Install Godot .NET Editor
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/godot-editor"
+          ditto -x -k "$RUNNER_TEMP/godot-downloads/${GODOT_EDITOR_ARCHIVE}" "$RUNNER_TEMP/godot-editor"
+          editor_app="$(find "$RUNNER_TEMP/godot-editor" -maxdepth 1 -name 'Godot*.app' | head -n 1)"
+
+          if [ -z "$editor_app" ]; then
+            echo "::error::Unable to locate the Godot .NET editor bundle."
+            exit 1
+          fi
+
+          echo "GODOT_BIN=${editor_app}/Contents/MacOS/Godot" >> "$GITHUB_ENV"
+
+      - name: Install Export Templates
+        run: |
+          set -euo pipefail
+          templates_dir="$HOME/Library/Application Support/Godot/export_templates/${GODOT_TEMPLATE_VERSION}"
+          mkdir -p "$templates_dir"
+          mkdir -p "$RUNNER_TEMP/godot-templates"
+          ditto -x -k "$RUNNER_TEMP/godot-downloads/${GODOT_TEMPLATES_ARCHIVE}" "$RUNNER_TEMP/godot-templates"
+          cp -R "$RUNNER_TEMP/godot-templates/templates/." "$templates_dir/"
+
+      - name: Restore Dependencies
+        run: dotnet restore Rhythia.csproj
+
+      - name: Build C# Project
+        run: dotnet build Rhythia.csproj -c Release
+
+      - name: Import Project Assets
+        run: |
+          set -euo pipefail
+          "$GODOT_BIN" --headless --path "$GITHUB_WORKSPACE" --editor --quit-after 1000
+
+      - name: Export Unsigned macOS Archive
+        run: |
+          set -euo pipefail
+          rm -rf build/macos
+          mkdir -p build/macos/unsigned build/macos/staging
+          "$GODOT_BIN" --headless --path "$GITHUB_WORKSPACE" --export-release "$EXPORT_PRESET" "$EXPORT_PATH"
+          ditto -x -k "$EXPORT_PATH" build/macos/staging
+
+          app_bundle_path="$(find build/macos/staging -maxdepth 1 -name '*.app' | head -n 1)"
+
+          if [ -z "$app_bundle_path" ]; then
+            echo "::error::Unable to locate the exported macOS app bundle."
+            exit 1
+          fi
+
+          echo "APP_BUNDLE_PATH=$app_bundle_path" >> "$GITHUB_ENV"
+          echo "ENTITLEMENTS_PATH=build/macos/Rhythia.entitlements" >> "$GITHUB_ENV"
+
+      - name: Validate Signing Secrets
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for secret_name in \
+            APPLE_CERTIFICATE_BASE64 \
+            APPLE_CERTIFICATE_PASSWORD \
+            APPLE_SIGNING_IDENTITY \
+            APPLE_TEAM_ID \
+            APPLE_ID \
+            APPLE_APP_SPECIFIC_PASSWORD
+          do
+            if [ -z "${!secret_name}" ]; then
+              echo "::error::Missing required secret: $secret_name"
+              exit 1
+            fi
+          done
+
+      - name: Import Developer ID Certificate
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          export KEYCHAIN_PASSWORD="$(openssl rand -base64 24)"
+          echo "KEYCHAIN_PASSWORD=$KEYCHAIN_PASSWORD" >> "$GITHUB_ENV"
+          echo "KEYCHAIN_PATH=$RUNNER_TEMP/rhythia-signing.keychain-db" >> "$GITHUB_ENV"
+
+          python3 - <<'PY'
+          import base64
+          import os
+          import pathlib
+
+          output = pathlib.Path(os.environ["RUNNER_TEMP"]) / "rhythia-signing.p12"
+          output.write_bytes(base64.b64decode(os.environ["APPLE_CERTIFICATE_BASE64"]))
+          PY
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$RUNNER_TEMP/rhythia-signing.keychain-db"
+          security default-keychain -s "$RUNNER_TEMP/rhythia-signing.keychain-db"
+          security set-keychain-settings -lut 21600 "$RUNNER_TEMP/rhythia-signing.keychain-db"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$RUNNER_TEMP/rhythia-signing.keychain-db"
+          security import "$RUNNER_TEMP/rhythia-signing.p12" \
+            -k "$RUNNER_TEMP/rhythia-signing.keychain-db" \
+            -P "$APPLE_CERTIFICATE_PASSWORD" \
+            -T /usr/bin/codesign \
+            -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$RUNNER_TEMP/rhythia-signing.keychain-db"
+
+      - name: Re-sign Exported App Bundle
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: |
+          set -euo pipefail
+          codesign --display --entitlements :- "$APP_BUNDLE_PATH" > "$ENTITLEMENTS_PATH"
+          codesign --force --deep --timestamp --options runtime --entitlements "$ENTITLEMENTS_PATH" --sign "$APPLE_SIGNING_IDENTITY" "$APP_BUNDLE_PATH"
+          codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE_PATH"
+
+      - name: Create Archive for Notarization
+        run: |
+          set -euo pipefail
+          rm -f "$FINAL_ARCHIVE"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_BUNDLE_PATH" "$FINAL_ARCHIVE"
+
+      - name: Notarize macOS Archive
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        run: |
+          set -euo pipefail
+          xcrun notarytool store-credentials "rhythia-notary" \
+            --apple-id "$APPLE_ID" \
+            --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD"
+          xcrun notarytool submit "$FINAL_ARCHIVE" --keychain-profile "rhythia-notary" --wait
+          xcrun stapler staple "$APP_BUNDLE_PATH"
+          spctl --assess --type execute --verbose "$APP_BUNDLE_PATH"
+          rm -f "$FINAL_ARCHIVE"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_BUNDLE_PATH" "$FINAL_ARCHIVE"
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: build/macos/macos.zip
+
+      - name: Upload Archive to GitHub Release
+        if: github.event_name == 'release'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ github.event.release.tag_name }}" build/macos/macos.zip --clobber

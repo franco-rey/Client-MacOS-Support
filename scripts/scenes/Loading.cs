@@ -43,9 +43,24 @@ public partial class Loading : BaseScene
 
         if (updateFound)
         {
-            var popup = new OptionPopup("Update Found", "Would you like to download the new version?");
-            popup.AddOption("Yes", Callable.From(updateStep));
-            popup.AddOption("No", Callable.From(mapInitializeStep));
+            bool supportsSelfUpdateInstall = Releases.SupportsSelfUpdateInstall;
+            string message = supportsSelfUpdateInstall
+                ? "Would you like to download the new version?"
+                : "Would you like to open the latest release page to download it?";
+
+            var popup = new OptionPopup("Update Found", message);
+
+            if (supportsSelfUpdateInstall)
+            {
+                popup.AddOption("Yes", Callable.From(updateStep));
+                popup.AddOption("No", Callable.From(mapInitializeStep));
+            }
+            else
+            {
+                popup.AddOption("Open", Callable.From(openLatestReleaseStep));
+                popup.AddOption("Later", Callable.From(mapInitializeStep));
+            }
+
             popup.Show();
         }
         else
@@ -77,6 +92,12 @@ public partial class Loading : BaseScene
             progressLabel.Text = "Installing";
         };
         Releases.UpdateToLatest();
+    }
+
+    private void openLatestReleaseStep()
+    {
+        Releases.OpenLatestReleasePage();
+        mapInitializeStep();
     }
 
     private void mapInitializeStep()

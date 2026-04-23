@@ -28,7 +28,7 @@ public partial class MapParser : Node
 
     public static async Task BulkImport(string[] files, bool notify = false)
     {
-        if (files.Length == 0 || files == null) return;
+        if (files == null || files.Length == 0) return;
 
         if (notify) ToastNotification.Notify($"Importing {files.Length} map(s)");
 
@@ -40,7 +40,7 @@ public partial class MapParser : Node
             var maps = new ConcurrentBag<Map>();
 
             Callable.From(() => Instance.EmitSignal(SignalName.MapsImportStarted)).CallDeferred();
-            Parallel.ForEach(files, new ParallelOptions { MaxDegreeOfParallelism = System.Environment.ProcessorCount / 4 }, file =>
+            Parallel.ForEach(files, new ParallelOptions { MaxDegreeOfParallelism = Math.Max(1, System.Environment.ProcessorCount / 4) }, file =>
             {
                 try
                 {
@@ -182,7 +182,7 @@ public partial class MapParser : Node
     }
     public static Map SSMapV1(string path, string audioPath = null)
     {
-        string name = path.Split("\\")[^1].TrimSuffix(".txt");
+        string name = Path.GetFileNameWithoutExtension(path);
         Godot.FileAccess file = Godot.FileAccess.Open(path, Godot.FileAccess.ModeFlags.Read);
         Map map;
 

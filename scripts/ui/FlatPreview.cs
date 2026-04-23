@@ -42,6 +42,11 @@ public partial class FlatPreview : Panel
 
     public override void _Process(double delta)
     {
+        if (Map == null)
+        {
+            return;
+        }
+
         float alpha = (float)Math.Min(1, delta * 6);
 
         foreach (ColorRect tile in tiles)
@@ -53,6 +58,11 @@ public partial class FlatPreview : Panel
 
         if (UseSoundManagerStreamPlayer)
         {
+            if (SoundManager.Map == null || SoundManager.Song == null)
+            {
+                return;
+            }
+
             if (SoundManager.Map.Name != Map.Name)
             {
                 return;

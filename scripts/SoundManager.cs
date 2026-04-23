@@ -69,6 +69,11 @@ public partial class SoundManager : Node, ISkinnable
         MapManager.Selected.ValueChanged += (_, selected) => {
             var map = selected.Value;
 
+            if (map == null)
+            {
+                return;
+            }
+
             if (Map == null || Map.Name != map.Name)
             {
                 PlayJukebox(map);
@@ -81,7 +86,7 @@ public partial class SoundManager : Node, ISkinnable
         {
             UpdateJukeboxQueue();
 
-            if (SettingsManager.Instance.Settings.AutoplayJukebox)
+            if (SettingsManager.Instance.Settings.AutoplayJukebox && JukeboxQueue.Length > 0)
             {
                 PlayJukebox(new Random().Next(0, JukeboxQueue.Length));
             }
@@ -144,6 +149,11 @@ public partial class SoundManager : Node, ISkinnable
 
     public static void PlayJukebox(Map map, bool setRichPresence = true)
     {
+        if (map == null)
+        {
+            return;
+        }
+
         Map = map;
 
         if (map.AudioBuffer == null)
@@ -162,7 +172,7 @@ public partial class SoundManager : Node, ISkinnable
 
         if (setRichPresence)
         {
-            Discord.Client.UpdateState($"Listening to {map.PrettyTitle}");
+            Discord.UpdateState($"Listening to {map.PrettyTitle}");
         }
     }
 

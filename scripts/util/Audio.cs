@@ -11,12 +11,7 @@ public class Audio
 
         if (buffer == null || buffer.Length < 4)
         {
-            FileAccess file = FileAccess.Open("res://sounds/quiet.mp3", FileAccess.ModeFlags.Read);
-            byte[] quietBuffer = file.GetBuffer((long)file.GetLength());
-
-            file.Close();
-
-            return new AudioStreamMP3() { Data = quietBuffer };
+            return GD.Load<AudioStreamMP3>("res://sounds/quiet.mp3");
         }
 
         if (Encoding.UTF8.GetString(buffer[0..4]) == "OggS")
@@ -37,7 +32,7 @@ public class Audio
 
         if (!System.IO.File.Exists(path))
         {
-            AudioStreamMP3.LoadFromFile("res://sounds/quiet.mp3");
+            return GD.Load<AudioStreamMP3>("res://sounds/quiet.mp3");
         }
 
         string ext = System.IO.Path.GetExtension(path);
