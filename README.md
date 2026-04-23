@@ -22,10 +22,31 @@
 ## New for Mac
 
 > [!NOTE]
-> The macOS release thus far is focused on ensuring core gameplay functionality. Custom map background-video support is currently unstable on macOS and does not block gameplay.
+> The macOS release is focused on ensuring core gameplay functionality. Custom map background-video support is currently unstable on macOS and does not block gameplay.
 
-> [!NOTE]
-> Public macOS releases are intended to be **signed and notarized**. If you are testing an unsigned prerelease artifact, macOS may require you to Control-click the app and choose **Open** the first time.
+Public macOS releases are intended to be signed and notarized. Until that is in place, the prerelease `.app` is only ad-hoc signed, so macOS will refuse to open it on first launch with a "*Rhythia can't be opened*" dialog.
+
+To open it the first time, do one of the following:
+
+- **Right-click** (or Control-click) `Rhythia.app` → **Open** → click **Open** in the dialog that appears. After this, normal double-clicking works.
+- Or, in Terminal, strip the quarantine attribute:
+  ```sh
+  xattr -cr /Applications/Rhythia.app
+  ```
+
+### Building the .app from source
+
+With the [prerequisites](#prerequisites) installed, from the project root:
+
+```sh
+# 1. Export the .app via Godot headless
+godot --headless --export-release "macOS" ./build/Rhythia.app
+
+# 2. Re-sign ad-hoc with the system codesign (required for the bundle to launch)
+codesign --force --deep --sign - ./build/Rhythia.app
+```
+
+If `godot` isn't on your `PATH`, substitute the full path to the Godot Mono binary — typically `/Applications/Godot_mono.app/Contents/MacOS/Godot`.
 
 ---
 
