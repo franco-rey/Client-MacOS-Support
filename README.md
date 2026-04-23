@@ -26,17 +26,14 @@
 
 Public macOS releases are intended to be signed and notarized. Until that is in place, the prerelease `.app` is only ad-hoc signed, so macOS will refuse to open it on first launch with a "*Rhythia can't be opened*" dialog.
 
-To open it the first time, do one of the following:
-
-- **Right-click** (or Control-click) `Rhythia.app` → **Open** → click **Open** in the dialog that appears. After this, normal double-clicking works.
-- Or, in Terminal, strip the quarantine attribute:
+To open it the first time you must strip the quarantine attribute in terminal:
   ```sh
-  xattr -cr /Applications/Rhythia.app
+  xattr -cr /[Path_To_Game]/Rhythia.app
   ```
 
-### Building the .app from source
+For your own security peace of mind, if you'd like, you are also welcome download the source code itself, to then build it yourself from source:
 
-With the [prerequisites](#prerequisites) installed, from the project root:
+With the [prerequisites](prerequisites) installed, from the project root:
 
 ```sh
 # 1. Export the .app via Godot headless
@@ -95,7 +92,7 @@ You can view all releases on the [Rewrite releases page](https://github.com/Rhyt
 |---|---|
 | **Windows** | [Download](https://github.com/Rhythia/Client/releases/latest/download/windows.zip) |
 | **Linux** | [Download](https://github.com/Rhythia/Client/releases/latest/download/linux.zip) |
-| **macOS** || [Download](https://github.com/franco-askew/Client-MacOS-Support/releases/download/0.1.1/MacOS.zip) |
+| **macOS** | [Download](https://github.com/franco-rey/Client-MacOS-Support/releases/download/0.1.1/MacOS.zip) |
 
 You can view the Rewrite source code [here](https://github.com/Rhythia/Client).
 
